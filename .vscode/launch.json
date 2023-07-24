@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "(Windows) Launch",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "C/C++: gcc.exe compila il file attivo",
+            "program": "${workspaceFolder}/${fileBasenameNoExtension}.exe",
+            "args": ["<", "../tests/archivio_test_aperti/open_101.txt", ">", "../tests/archivio_test_aperti/esiti/open_101.output.txt"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": []
+        },
+    ],
+    "version": "2.0.0"
+}
