@@ -6,7 +6,7 @@
             "request": "launch",
             "preLaunchTask": "C/C++: gcc.exe compila il file attivo",
             "program": "${workspaceFolder}/${fileBasenameNoExtension}.exe",
-            "args": ["<", "../tests/archivio_test_aperti/open_101.txt", ">", "../tests/archivio_test_aperti/esiti/open_101.output.txt"],
+            "args": ["<", "../tests/archivio_test_aperti/open_5.txt"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": []

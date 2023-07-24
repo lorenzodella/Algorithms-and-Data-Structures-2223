@@ -111,7 +111,7 @@ typedef struct autostrada {
     Nodo *root;
 } Tree;
 
-#include "bstprinter.h"
+//#include "bstprinter.h"
 
 Nodo* bst_newnode(Stazione s){
     Nodo *new = malloc(sizeof(Nodo));
@@ -163,11 +163,29 @@ Nodo* bst_minimum(Nodo* n){
     return n;
 }
 
+Nodo* bst_maximum(Nodo* n){
+    while(n->right != NULL){
+        n = n->right;
+    }
+    return n;
+}
+
 Nodo* bst_successor(Nodo* n){
     if(n->right != NULL)
         return bst_minimum(n->right);
     Nodo* par = n->p;
     while(par!=NULL && n==par->right){
+        n = par;
+        par = par->p;
+    }
+    return par;
+}
+
+Nodo* bst_predecessor(Nodo* n){
+    if(n->left != NULL)
+        return bst_maximum(n->left);
+    Nodo* par = n->p;
+    while(par!=NULL && n==par->left){
         n = par;
         par = par->p;
     }
@@ -208,6 +226,54 @@ void bst_print_inorder(Nodo* n){
         print_stazione(n->stazione);
         bst_print_inorder(n->right);
     }
+}
+
+//----------------------------PILA---------------------------------
+
+typedef struct elem {
+    int val;
+    struct elem *next;
+} Elem;
+
+typedef struct pila {
+    Elem *top;
+    int dim;
+    int valid;
+} Pila;
+
+void init(Pila *p){
+    p->top = NULL;
+    p->dim = 0;
+    p->valid = 1;
+}
+
+void print_pila(Elem *e){
+    if(e==NULL)
+        return;
+    print_pila(e->next);
+    printf("%d ", e->val);
+    /*Elem *e = p.top;
+    while (e!=NULL){
+        printf("%d ", e->val);
+        e = e->next;
+    }*/
+}
+
+void push(Pila *p, int n){
+    Elem *e = malloc(sizeof(Elem));
+    e->val = n;
+    e->next = p->top;
+    p->top = e;
+    p->dim++;
+}
+
+void pop(Pila *p){
+    if(p->dim==0)
+        return;
+    Elem *e = p->top;
+    p->top = p->top->next;
+    free(e);
+    p->dim--;
 }
 
 //----------------------------AUTOSTRADA---------------------------------
@@ -275,7 +341,7 @@ int pianifica_percorso_avanti(Nodo* start, int end){
     return 0;
 }
 
-int pianifica_percorso_indietro(Nodo* end, Nodo* start){
+/*int pianifica_percorso_indietro(Nodo* end, Nodo* start){
     Nodo* n = end;
     int distanza = start->stazione.distanza;
     int autonomia = heap_getmax(start->stazione.parco_auto);
@@ -294,6 +360,59 @@ int pianifica_percorso_indietro(Nodo* end, Nodo* start){
         return 1;
     }
     return 0;
+}*/
+
+Pila prova_percorso(Tree autostrada, int end, Nodo* start, Pila p, int max){
+    if(max<0){
+        p.valid = 0;
+        return p;
+    }
+    push(&p, start->stazione.distanza);
+    if(start->stazione.distanza == end){
+        return p;
+    }
+
+    int autonomia = heap_getmax(start->stazione.parco_auto);
+    Nodo *n = bst_predecessor(start), *prec = NULL;
+    while(start->stazione.distanza-autonomia <= n->stazione.distanza){
+        prec = n;
+        n = bst_predecessor(n);
+        if(n==NULL){
+            return p;
+        }
+    }
+    if(prec==NULL){
+        p.valid = 0;
+        return p;
+    }
+
+    Pila p1, p2;
+
+    p1 = prova_percorso(autostrada, end, prec, p, max-1);
+    if(p1.valid == 0)
+        return p1;
+
+    Nodo *succ = bst_successor(prec);
+    while(succ!=start){
+        p2 = prova_percorso(autostrada, end, succ, p, p1.dim);
+        if(p2.valid == 0)
+            return p1;
+        if(p2.dim < p1.dim)
+            p1 = p2;
+        succ = bst_successor(succ);
+    }
+
+    return p1;
+}
+
+int pianifica_percorso_indietro(Tree autostrada, int end, Nodo* start){
+    Pila p;
+    init(&p);
+    p = prova_percorso(autostrada, end, start, p, 10000);
+    if(p.valid == 0)
+        return 0;
+    print_pila(p.top);
+    return 1;
 }
 
 int pianifica_percorso(Tree autostrada){
@@ -311,7 +430,7 @@ int pianifica_percorso(Tree autostrada){
         }
     } 
     else {
-        if(pianifica_percorso_indietro(bst_search(autostrada.root, end), bst_search(autostrada.root, start))){
+        if(pianifica_percorso_indietro(autostrada, end, bst_search(autostrada.root, start))){
             printf("%d\n", end);
             return 1;
         }
