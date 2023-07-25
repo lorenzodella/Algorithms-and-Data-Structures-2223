@@ -410,7 +410,7 @@ int pianifica_percorso_avanti(Nodo* start, int end){
 }*/
 
 // visita in ampiezza da end
-Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
+Nodo* pianifica_percorso_indietro(Nodo* end, int start){
     end->color=1;
     Nodo *n, *succ;
     Coda q;
@@ -420,12 +420,15 @@ Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     enqueue(&q, end);
     while(!is_empty(&q)){
         n = dequeue(&q);
-        if(n->stazione.distanza==start->stazione.distanza){
+        if(n->stazione.distanza==start){
             clean(&q);
             return n;
         }
-        succ = bst_successor(n);
-        while(succ!=NULL && succ->stazione.distanza <= start->stazione.distanza){
+        if(q.tail!=NULL)
+            succ = bst_successor(q.tail->val);
+        else
+            succ = bst_successor(n);
+        while(succ!=NULL && succ->stazione.distanza <= start){
             autonomia = heap_getmax(succ->stazione.parco_auto);
             if(autonomia<0)
                 return NULL;
@@ -523,20 +526,20 @@ int pianifica_percorso(Tree autostrada){
         return 1;
     }
     else if(start<end){
-        /*if( pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
+        if( pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
             printf("%d\n", end);
             return 1;
-        }*/
-        reset(autostrada.root);
+        }
+        /*reset(autostrada.root);
         if( (n=pianifica_percorso_avanti(bst_search(autostrada.root, start), end)) != NULL){
             post_backtrace(n);
             printf("\n");
             return 1;
-        }
+        }*/
     } 
     else {
         reset(autostrada.root);
-        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), bst_search(autostrada.root, start))) != NULL){
+        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), start)) != NULL){
             pre_backtrace(n);
             printf("\n");
             return 1;
