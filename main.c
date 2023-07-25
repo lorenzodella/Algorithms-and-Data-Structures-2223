@@ -257,6 +257,16 @@ Nodo* dequeue(Coda *p){
     return n;
 }
 
+void print_coda(Coda *p){
+    if(is_empty(p))
+        return;
+
+    Nodo *n;
+    n=dequeue(p);
+    print_coda(p);
+    printf("%d ", n->stazione.distanza);
+}
+
 //----------------------------AUTOSTRADA---------------------------------
 
 int aggiungi_stazione(Tree *autostrada){
@@ -307,29 +317,26 @@ void reset(Nodo *n){
     }
 }
 
-int pianifica_percorso_avanti(Nodo* start, int end){
+int pianifica_percorso_avanti(Nodo* start, int end, Coda *q){
     start->color=1;
-    Nodo *n, *succ;
-    Coda q;
+    Nodo *n = start, *succ;
     int autonomia;
-
-    init(&q);
-    enqueue(&q, start);
-    while(!is_empty(&q)){
-        n = dequeue(&q);
-        succ = bst_successor(n);
-        autonomia = heap_getmax(n->stazione.parco_auto);
-        while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
-            if(succ->stazione.distanza==end)
-                return 1;
-            if(succ->color==0){
-                succ->color=1;
-                enqueue(&q, succ);
-            }
-            succ = bst_successor(succ);
+    
+    succ = bst_successor(n);
+    autonomia = heap_getmax(n->stazione.parco_auto);
+    while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
+        if(succ->stazione.distanza==end){
+            return 1;
         }
-        n->color=2;
+        if(succ->color==0){
+            if(pianifica_percorso_avanti(succ, end, q)){
+                enqueue(q, succ);
+                return 1;
+            }
+        }
+        succ = bst_successor(succ);
     }
+    n->color=2;
     return 0;
 }
 
@@ -339,6 +346,8 @@ int pianifica_percorso_indietro(Nodo* end, Nodo* start){
 }
 
 int pianifica_percorso(Tree autostrada){
+    Coda q;
+    init(&q);
     int start, end;
     if(scanf("%d", &start));
     if(scanf("%d", &end));
@@ -348,7 +357,10 @@ int pianifica_percorso(Tree autostrada){
     }
     else if(start<end){
         reset(autostrada.root);
-        if(pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
+        Nodo *n = bst_search(autostrada.root, start);
+        if(pianifica_percorso_avanti(n, end, &q)){
+            enqueue(&q, n);
+            print_coda(&q);
             printf("%d\n", end);
             return 1;
         }
