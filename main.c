@@ -105,6 +105,7 @@ typedef struct nodo {
     struct nodo *left;
     struct nodo *right;
     struct nodo *p;
+    int color;
 } Nodo;
 
 typedef struct autostrada {
@@ -210,6 +211,52 @@ void bst_print_inorder(Nodo* n){
     }
 }
 
+//----------------------------CODA---------------------------------
+
+typedef struct elem {
+    Nodo* val;
+    struct elem *next;
+    struct elem *prev;
+} Elem;
+
+typedef struct coda {
+    Elem *tail;
+    Elem *head;
+} Coda;
+
+void init(Coda *p){
+    p->head = NULL;
+    p->tail = NULL;
+}
+
+int is_empty(Coda *p){
+    return (p->tail==NULL && p->head==NULL);
+}
+
+void enqueue(Coda *p, Nodo *n){
+    Elem *e = malloc(sizeof(Elem));
+    e->val = n;
+    e->next = p->tail;
+    e->prev = NULL;
+    p->tail = e;
+    if(e->next==NULL)
+        p->head = p->tail;
+    else
+        e->next->prev = e;
+}
+
+Nodo* dequeue(Coda *p){
+    Elem *e = p->head;
+    p->head = p->head->prev;
+    if(p->head!=NULL)
+        p->head->next = NULL;
+    else
+        p->tail = NULL;
+    Nodo *n = e->val;
+    free(e);
+    return n;
+}
+
 //----------------------------AUTOSTRADA---------------------------------
 
 int aggiungi_stazione(Tree *autostrada){
@@ -252,47 +299,42 @@ int rottama_auto(Tree *autostrada){
 
 //----------------------------PIANIFICA PERCORSO---------------------------------
 
+void reset(Nodo *n){
+    if(n!=NULL){
+        n->color = 0;
+        reset(n->left);
+        reset(n->right);
+    }
+}
+
 int pianifica_percorso_avanti(Nodo* start, int end){
-    Nodo* n = start;
-    int distanza = n->stazione.distanza;
-    int autonomia = heap_getmax(n->stazione.parco_auto);
+    start->color=1;
+    Nodo *n, *succ;
+    Coda q;
+    int autonomia;
 
-    if(start->stazione.distanza == end){
-        return 1;
-    }
-
-    while(distanza+autonomia < end){
-        n = bst_successor(n);
-        if(n==NULL || n->stazione.distanza == end)
-            return 0;
-        distanza = n->stazione.distanza;
+    init(&q);
+    enqueue(&q, start);
+    while(!is_empty(&q)){
+        n = dequeue(&q);
+        succ = bst_successor(n);
         autonomia = heap_getmax(n->stazione.parco_auto);
-    }
-    if(pianifica_percorso_avanti(start, n->stazione.distanza)){
-        printf("%d ", n->stazione.distanza);
-        return 1;
+        while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
+            if(succ->stazione.distanza==end)
+                return 1;
+            if(succ->color==0){
+                succ->color=1;
+                enqueue(&q, succ);
+            }
+            succ = bst_successor(succ);
+        }
+        n->color=2;
     }
     return 0;
 }
 
 int pianifica_percorso_indietro(Nodo* end, Nodo* start){
-    Nodo* n = end;
-    int distanza = start->stazione.distanza;
-    int autonomia = heap_getmax(start->stazione.parco_auto);
-
-    if(end->stazione.distanza == start->stazione.distanza){
-        return 1;
-    }
-
-    printf("%d ", start->stazione.distanza);
-    while(distanza-autonomia > n->stazione.distanza){
-        n = bst_successor(n);
-        if(n==NULL || n->stazione.distanza == start->stazione.distanza)
-            return 0;
-    }
-    if(pianifica_percorso_indietro(end, n)){
-        return 1;
-    }
+    
     return 0;
 }
 
@@ -305,6 +347,7 @@ int pianifica_percorso(Tree autostrada){
         return 1;
     }
     else if(start<end){
+        reset(autostrada.root);
         if(pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
             printf("%d\n", end);
             return 1;
@@ -356,6 +399,33 @@ int main(){
                 printf("nessun percorso\n");
         }
     }
+
+    /*Coda p;
+    init(&p);
+    Nodo *n;
+    n=malloc(sizeof(Nodo));
+    n->stazione.distanza = 1;
+    enqueue(&p, n);
+    n=malloc(sizeof(Nodo));
+    n->stazione.distanza = 2;
+    enqueue(&p, n);
+    n=malloc(sizeof(Nodo));
+    n->stazione.distanza = 3;
+    enqueue(&p, n);
+
+    printf("%d ", dequeue(&p)->stazione.distanza);
+    printf("%d ", dequeue(&p)->stazione.distanza);
+    printf("%d\n", dequeue(&p)->stazione.distanza);
+    printf("%d\n", is_empty(&p));
+
+    n=malloc(sizeof(Nodo));
+    n->stazione.distanza = 4;
+    enqueue(&p, n);
+    
+    printf("%d\n", is_empty(&p));
+
+    printf("%d\n", dequeue(&p)->stazione.distanza);
+    printf("%d\n", is_empty(&p));*/
 
     //printf("\n");
     //bst_print_inorder(autostrada.root);
