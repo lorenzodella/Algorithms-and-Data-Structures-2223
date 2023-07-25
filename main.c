@@ -163,11 +163,29 @@ Nodo* bst_minimum(Nodo* n){
     return n;
 }
 
+Nodo* bst_maximum(Nodo* n){
+    while(n->right != NULL){
+        n = n->right;
+    }
+    return n;
+}
+
 Nodo* bst_successor(Nodo* n){
     if(n->right != NULL)
         return bst_minimum(n->right);
     Nodo* par = n->p;
     while(par!=NULL && n==par->right){
+        n = par;
+        par = par->p;
+    }
+    return par;
+}
+
+Nodo* bst_predecessor(Nodo* n){
+    if(n->left != NULL)
+        return bst_maximum(n->left);
+    Nodo* par = n->p;
+    while(par!=NULL && n==par->left){
         n = par;
         par = par->p;
     }
@@ -276,21 +294,23 @@ int pianifica_percorso_avanti(Nodo* start, int end){
 }
 
 int pianifica_percorso_indietro(Nodo* end, Nodo* start){
-    Nodo* n = end;
-    int distanza = start->stazione.distanza;
-    int autonomia = heap_getmax(start->stazione.parco_auto);
+    Nodo* n = start;
+    int distanza = end->stazione.distanza;
+    int autonomia = heap_getmax(n->stazione.parco_auto);
 
-    if(end->stazione.distanza == start->stazione.distanza){
+    if(start->stazione.distanza == end->stazione.distanza){
         return 1;
     }
 
-    printf("%d ", start->stazione.distanza);
-    while(distanza-autonomia > n->stazione.distanza){
-        n = bst_successor(n);
-        if(n==NULL || n->stazione.distanza == start->stazione.distanza)
+    while(distanza+autonomia < n->stazione.distanza){
+        n = bst_predecessor(n);
+        if(n==NULL || n->stazione.distanza == end->stazione.distanza)
             return 0;
+        distanza = end->stazione.distanza;
+        autonomia = heap_getmax(n->stazione.parco_auto);
     }
-    if(pianifica_percorso_indietro(end, n)){
+    if(pianifica_percorso_indietro(n, start)){
+        printf("%d ", n->stazione.distanza);
         return 1;
     }
     return 0;
