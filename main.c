@@ -74,7 +74,10 @@ int heap_delete(Heap *heap, int val){
 }
 
 int heap_getmax(Heap heap){
-    return heap.vet[0];
+    if(heap.size>0)
+        return heap.vet[0];
+    else
+        return -1;
 }
 
 void heap_print(Heap heap){
@@ -348,7 +351,34 @@ void reset(Nodo *n){
     }
 }
 
-Nodo* pianifica_percorso_avanti(Nodo* start, int end){
+// idea iniziale
+int pianifica_percorso_avanti(Nodo* start, int end){
+    Nodo* n = start;
+    int distanza = n->stazione.distanza;
+    int autonomia = heap_getmax(n->stazione.parco_auto);
+
+    if(start->stazione.distanza == end){
+        return 1;
+    }
+
+    while(distanza+autonomia < end){
+        if(autonomia<0)
+            return 0;
+        n = bst_successor(n);
+        if(n==NULL || n->stazione.distanza == end)
+            return 0;
+        distanza = n->stazione.distanza;
+        autonomia = heap_getmax(n->stazione.parco_auto);
+    }
+    if(pianifica_percorso_avanti(start, n->stazione.distanza)){
+        printf("%d ", n->stazione.distanza);
+        return 1;
+    }
+    return 0;
+}
+
+// visita in ampiezza da start
+/*Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     start->color=1;
     Nodo *n, *succ;
     Coda q;
@@ -364,6 +394,8 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
         }
         succ = bst_successor(n);
         autonomia = heap_getmax(n->stazione.parco_auto);
+        if(autonomia<0)
+            return NULL;
         while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
             if(succ->color==0){
                 succ->path_predecessor = n;
@@ -375,8 +407,9 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
         n->color=2;
     }
     return NULL;
-}
+}*/
 
+// visita in ampiezza da end
 Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     end->color=1;
     Nodo *n, *succ;
@@ -394,6 +427,8 @@ Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
         succ = bst_successor(n);
         while(succ!=NULL && succ->stazione.distanza <= start->stazione.distanza){
             autonomia = heap_getmax(succ->stazione.parco_auto);
+            if(autonomia<0)
+                return NULL;
             if(succ->color==0 && n->stazione.distanza+autonomia >= succ->stazione.distanza){
                 succ->path_predecessor = n;
                 succ->color=1;
@@ -406,6 +441,7 @@ Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     return NULL;
 }
 
+// visita in ampiezza da start con passo piu lontano e torno indietro
 /*Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     start->color=1;
     Nodo *n, *succ;
@@ -431,6 +467,7 @@ Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     return NULL;
 }*/
 
+// visita in ampiezza da start
 /*Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
     start->color=1;
     Nodo *n, *succ;
@@ -486,6 +523,10 @@ int pianifica_percorso(Tree autostrada){
         return 1;
     }
     else if(start<end){
+        /*if( pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
+            printf("%d\n", end);
+            return 1;
+        }*/
         reset(autostrada.root);
         if( (n=pianifica_percorso_avanti(bst_search(autostrada.root, start), end)) != NULL){
             post_backtrace(n);
