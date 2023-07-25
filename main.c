@@ -106,6 +106,7 @@ typedef struct nodo {
     struct nodo *right;
     struct nodo *p;
     int color;
+    struct nodo *path_predecessor;
 } Nodo;
 
 typedef struct autostrada {
@@ -302,12 +303,13 @@ int rottama_auto(Tree *autostrada){
 void reset(Nodo *n){
     if(n!=NULL){
         n->color = 0;
+        n->path_predecessor = NULL;
         reset(n->left);
         reset(n->right);
     }
 }
 
-int pianifica_percorso_avanti(Nodo* start, int end){
+Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     start->color=1;
     Nodo *n, *succ;
     Coda q;
@@ -317,12 +319,13 @@ int pianifica_percorso_avanti(Nodo* start, int end){
     enqueue(&q, start);
     while(!is_empty(&q)){
         n = dequeue(&q);
+        if(n->stazione.distanza==end)
+            return n;
         succ = bst_successor(n);
         autonomia = heap_getmax(n->stazione.parco_auto);
         while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
-            if(succ->stazione.distanza==end)
-                return 1;
             if(succ->color==0){
+                succ->path_predecessor = n;
                 succ->color=1;
                 enqueue(&q, succ);
             }
@@ -330,15 +333,57 @@ int pianifica_percorso_avanti(Nodo* start, int end){
         }
         n->color=2;
     }
-    return 0;
+    return NULL;
 }
 
-int pianifica_percorso_indietro(Nodo* end, Nodo* start){
-    
-    return 0;
+Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
+    end->color=1;
+    Nodo *n, *succ;
+    Coda q;
+    int autonomia;
+
+    init(&q);
+    enqueue(&q, end);
+    while(!is_empty(&q)){
+        n = dequeue(&q);
+        if(n->stazione.distanza==start->stazione.distanza)
+            return n;
+        succ = bst_successor(n);
+        autonomia = heap_getmax(succ->stazione.parco_auto);
+        while(succ!=NULL && n->stazione.distanza+autonomia >= succ->stazione.distanza){
+            if(succ->color==0){
+                succ->path_predecessor = n;
+                succ->color=1;
+                enqueue(&q, succ);
+            }
+            succ = bst_successor(succ);
+            autonomia = heap_getmax(succ->stazione.parco_auto);
+        }
+        n->color=2;
+    }
+    return NULL;
+}
+
+void post_backtrace(Nodo *n){
+    if(n!=NULL){
+        post_backtrace(n->path_predecessor);
+        if(n->path_predecessor!=NULL)
+            printf(" ");
+        printf("%d", n->stazione.distanza);
+    }
+}
+
+void pre_backtrace(Nodo *n){
+    if(n!=NULL){
+        printf("%d", n->stazione.distanza);
+        if(n->path_predecessor!=NULL)
+            printf(" ");
+        pre_backtrace(n->path_predecessor);
+    }
 }
 
 int pianifica_percorso(Tree autostrada){
+    Nodo *n;
     int start, end;
     if(scanf("%d", &start));
     if(scanf("%d", &end));
@@ -348,14 +393,17 @@ int pianifica_percorso(Tree autostrada){
     }
     else if(start<end){
         reset(autostrada.root);
-        if(pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
-            printf("%d\n", end);
+        if( (n=pianifica_percorso_avanti(bst_search(autostrada.root, start), end)) != NULL){
+            post_backtrace(n);
+            printf("\n");
             return 1;
         }
     } 
     else {
-        if(pianifica_percorso_indietro(bst_search(autostrada.root, end), bst_search(autostrada.root, start))){
-            printf("%d\n", end);
+        reset(autostrada.root);
+        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), bst_search(autostrada.root, start))) != NULL){
+            pre_backtrace(n);
+            printf("\n");
             return 1;
         }
     }
