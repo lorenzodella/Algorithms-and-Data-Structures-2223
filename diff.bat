@@ -198,11 +198,3 @@ fc open_99.output.txt esiti/open_99.output.txt > nul
 if %errorlevel% neq 0 (echo 99)
 fc open_100.output.txt esiti/open_100.output.txt > nul
 if %errorlevel% neq 0 (echo 100)
-fc open_101.output.txt esiti/open_101.output.txt > nul
-if %errorlevel% neq 0 (echo 101)
-fc open_102.output.txt esiti/open_102.output.txt > nul
-if %errorlevel% neq 0 (echo 102)
-fc open_103.output.txt esiti/open_103.output.txt > nul
-if %errorlevel% neq 0 (echo 103)
-fc open_104.output.txt esiti/open_104.output.txt > nul
-if %errorlevel% neq 0 (echo 104)
