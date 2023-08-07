@@ -8,22 +8,22 @@
 
 void scanf_veloce_numero(int* n){
     *n=0;
-    int c=_getchar_nolock();
+    int c=getchar_unlocked();
     while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
         *n=*n*10+c-48;
-        c=_getchar_nolock();
+        c=getchar_unlocked();
     }
 }
 
 int scanf_veloce(char* s){
     int i=0;
-    char c=_getchar_nolock();
+    char c=getchar_unlocked();
     while( c!=' ' && c!=EOF){
         if(c!='\n' && c!='\r'){
             s[i]=c;
             i++;
         }
-        c=_getchar_nolock();
+        c=getchar_unlocked();
     }
     s[i]='\0';
     return i;
@@ -134,7 +134,6 @@ typedef struct nodo {
     struct nodo *right;
     struct nodo *p;
     int isRed;
-    int color;
     struct nodo *path_predecessor;
 } Nodo;
 
@@ -149,7 +148,6 @@ void RB_init(Tree *t){
     t->nil->right = t->nil;
     t->nil->p = t->nil;
     t->nil->isRed = 0;
-    t->nil->color = 0;
     t->nil->path_predecessor = NULL;
     t->root = t->nil;
 }
@@ -564,7 +562,6 @@ int rottama_auto(Tree *autostrada){
 
 void reset(Tree *t, Nodo *n){
     if(n!=t->nil){
-        n->color = 0;
         n->path_predecessor = NULL;
         reset(t, n->left);
         reset(t, n->right);
@@ -573,7 +570,6 @@ void reset(Tree *t, Nodo *n){
 
 // visita in ampiezza da start
 Nodo* pianifica_percorso_avanti(Tree *autostrada, Nodo* start, int end){
-    start->color=1;
     Nodo *n, *succ;
     Coda q;
     int autonomia;
@@ -593,21 +589,16 @@ Nodo* pianifica_percorso_avanti(Tree *autostrada, Nodo* start, int end){
         if(autonomia<0)
             return NULL;
         while(succ!=autostrada->nil && succ->stazione.distanza <= n->stazione.distanza+autonomia){
-            if(succ->color==0){
-                succ->path_predecessor = n;
-                succ->color=1;
-                enqueue(&q, succ);
-            }
+            succ->path_predecessor = n;
+            enqueue(&q, succ);
             succ = RB_successor(autostrada, succ);
         }
-        n->color=2;
     }
     return NULL;
 }
 
 // visita in ampiezza da start con pila
 Nodo* pianifica_percorso_indietro(Tree *autostrada, Nodo* start, int end){
-    start->color=1;
     Nodo *n, *prec;
     Pila p, tmp;
     int autonomia;
@@ -629,14 +620,10 @@ Nodo* pianifica_percorso_indietro(Tree *autostrada, Nodo* start, int end){
         if(autonomia<0)
             return NULL;
         while(prec!=autostrada->nil && n->stazione.distanza-autonomia <= prec->stazione.distanza){
-            if(prec->color==0){
-                prec->path_predecessor = n;
-                prec->color=1;
-                push(&tmp, prec);
-            }
+            prec->path_predecessor = n;
+            push(&tmp, prec);
             prec = RB_predecessor(autostrada, prec);
         }
-        n->color=2;
 
         if(pila_is_empty(&p)){
             p.top = tmp.top;
