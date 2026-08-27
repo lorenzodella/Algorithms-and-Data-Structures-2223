@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define MAX_AUTO 512
+#define MAX_STAZIONI 100000
 
 //-----------------------------MAXHEAP--------------------------------
 
@@ -300,6 +301,62 @@ void clean(Coda *p){
     }
 }
 
+//----------------------------HEAP_STAZIONI---------------------------------
+
+typedef struct heap_stazioni {
+    Nodo *vet[MAX_STAZIONI];
+    int size;
+} HeapStazioni;
+
+void swap_stazioni(Nodo **a, Nodo **b){
+    Nodo *tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+void max_heapify_stazioni(HeapStazioni *heap, int i){
+    int l = heap_left(i);
+    int r = heap_right(i);
+    int max;
+    if(l<heap->size && heap_getmax(heap->vet[l]->stazione.parco_auto) > heap_getmax(heap->vet[i]->stazione.parco_auto))
+        max = l;
+    else
+        max = i;
+    if(r<heap->size && heap_getmax(heap->vet[r]->stazione.parco_auto) > heap_getmax(heap->vet[max]->stazione.parco_auto))
+        max = r;
+    if(max!=i){
+        swap_stazioni(&heap->vet[i], &heap->vet[max]);
+        max_heapify_stazioni(heap, max);
+    }
+}
+
+void heap_stazioni_check_priority(HeapStazioni *heap, int i){
+    int p = heap_parent(i);
+    if(p>=0 && heap_getmax(heap->vet[i]->stazione.parco_auto) > heap_getmax(heap->vet[p]->stazione.parco_auto)){
+        swap_stazioni(&heap->vet[i], &heap->vet[p]);
+        heap_stazioni_check_priority(heap, p);
+    }
+}
+
+int heap_stazioni_insert(HeapStazioni *heap, Nodo *val){
+    if(heap->size==MAX_STAZIONI)
+        return 0;
+    heap->vet[heap->size]=val;
+    heap_stazioni_check_priority(heap, heap->size);
+    heap->size++;
+    return 1;
+}
+
+Nodo* heap_stazioni_getmax(HeapStazioni *heap){
+    if(heap->size<=0)
+        return NULL;
+    Nodo *n = heap->vet[0];
+    heap->size--;
+    heap->vet[0] = heap->vet[heap->size];
+    max_heapify_stazioni(heap, 0);
+    return n;
+}
+
 //----------------------------AUTOSTRADA---------------------------------
 
 void scanf_veloce_numero(int* n){
@@ -422,7 +479,7 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
 }
 
 // visita in ampiezza da end
-Nodo* pianifica_percorso_indietro(Nodo* end, int start){
+/*Nodo* pianifica_percorso_indietro(Nodo* end, int start){
     end->color=1;
     Nodo *n, *succ;
     Coda q;
@@ -450,6 +507,38 @@ Nodo* pianifica_percorso_indietro(Nodo* end, int start){
                 enqueue(&q, succ);
             }
             succ = bst_successor(succ);
+        }
+        n->color=2;
+    }
+    return NULL;
+}*/
+
+// visita in ampiezza da start con maxheap sull'autonomia
+Nodo* pianifica_percorso_indietro(Nodo* start, int end){
+    start->color=1;
+    Nodo *n, *succ;
+    HeapStazioni h;
+    h.size = 0;
+    int autonomia;
+
+    heap_stazioni_insert(&h, start);
+    while(h.size>0){
+        n = heap_stazioni_getmax(&h);
+        if(n->stazione.distanza==end){
+            //clean(&q);
+            return n;
+        }
+        succ = bst_predecessor(n);
+        autonomia = heap_getmax(n->stazione.parco_auto);
+        if(autonomia<0)
+            return NULL;
+        while(succ!=NULL && n->stazione.distanza-autonomia <= succ->stazione.distanza){
+            if(succ->color==0){
+                succ->path_predecessor = n;
+                succ->color=1;
+                heap_stazioni_insert(&h, succ);
+            }
+            succ = bst_predecessor(succ);
         }
         n->color=2;
     }
@@ -531,6 +620,7 @@ void pre_backtrace(Nodo *n){
 int pianifica_percorso(Tree autostrada){
     Nodo *n;
     int start, end;
+    //bst_print_inorder(autostrada.root);
     scanf_veloce_numero(&start);
     scanf_veloce_numero(&end);
     if(start==end){
@@ -550,9 +640,15 @@ int pianifica_percorso(Tree autostrada){
         }
     } 
     else {
-        reset(autostrada.root);
+        /*reset(autostrada.root);
         if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), start)) != NULL){
             pre_backtrace(n);
+            printf("\n");
+            return 1;
+        }*/
+        reset(autostrada.root);
+        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, start), end)) != NULL){
+            post_backtrace(n);
             printf("\n");
             return 1;
         }

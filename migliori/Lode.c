@@ -250,64 +250,112 @@ void bst_print_inorder(Nodo* n){
 
 //----------------------------CODA---------------------------------
 
-typedef struct elem {
+typedef struct c_elem {
     Nodo* val;
-    struct elem *next;
-    struct elem *prev;
-} Elem;
+    struct c_elem *next;
+    struct c_elem *prev;
+} CodaElem;
 
 typedef struct coda {
-    Elem *tail;
-    Elem *head;
+    CodaElem *tail;
+    CodaElem *head;
 } Coda;
 
-void init(Coda *p){
-    p->head = NULL;
-    p->tail = NULL;
+void coda_init(Coda *q){
+    q->head = NULL;
+    q->tail = NULL;
 }
 
-int is_empty(Coda *p){
-    return (p->tail==NULL && p->head==NULL);
+int coda_is_empty(Coda *q){
+    return (q->tail==NULL && q->head==NULL);
 }
 
-void enqueue(Coda *p, Nodo *n){
-    Elem *e = malloc(sizeof(Elem));
+void enqueue(Coda *q, Nodo *n){
+    CodaElem *e = malloc(sizeof(CodaElem));
     e->val = n;
-    e->next = p->tail;
+    e->next = q->tail;
     e->prev = NULL;
-    p->tail = e;
+    q->tail = e;
     if(e->next==NULL)
-        p->head = p->tail;
+        q->head = q->tail;
     else
         e->next->prev = e;
 }
 
-Nodo* dequeue(Coda *p){
-    Elem *e = p->head;
-    p->head = p->head->prev;
-    if(p->head!=NULL)
-        p->head->next = NULL;
+Nodo* dequeue(Coda *q){
+    CodaElem *e = q->head;
+    q->head = q->head->prev;
+    if(q->head!=NULL)
+        q->head->next = NULL;
     else
-        p->tail = NULL;
+        q->tail = NULL;
     Nodo *n = e->val;
     free(e);
     return n;
 }
 
-void clean(Coda *p){
-    while(!is_empty(p)){
-        dequeue(p);
+void clean(Coda *q){
+    while(!coda_is_empty(q)){
+        dequeue(q);
     }
+}
+
+//----------------------------PILA---------------------------------
+
+typedef struct p_elem {
+    Nodo *val;
+    struct p_elem *next;
+} PilaElem;
+
+typedef struct pila {
+    PilaElem *top;
+} Pila;
+
+void pila_init(Pila *p){
+    p->top = NULL;
+}
+
+int pila_is_empty(Pila *p){
+    return p->top == NULL;
+}
+
+void print_pila(PilaElem *e){
+    if(e==NULL)
+        return;
+    print_pila(e->next);
+    printf("%d ", e->val->stazione.distanza);
+    /*Elem *e = p.top;
+    while (e!=NULL){
+        printf("%d ", e->val);
+        e = e->next;
+    }*/
+}
+
+void push(Pila *p, Nodo *n){
+    PilaElem *e = malloc(sizeof(PilaElem));
+    e->val = n;
+    e->next = p->top;
+    p->top = e;
+}
+
+Nodo* pop(Pila *p){
+    if(pila_is_empty(p))
+        return NULL;
+    PilaElem *e = p->top;
+    p->top = p->top->next;
+    Nodo *n = e->val;
+    free(e);
+    return n;
 }
 
 //----------------------------AUTOSTRADA---------------------------------
 
 void scanf_veloce_numero(int* n){
     *n=0;
-    int c=_getchar_nolock();
+    int c=getchar_unlocked();
     while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
         *n=*n*10+c-48;
-        c=_getchar_nolock();
+        c=getchar_unlocked();
     }
 }
 
@@ -386,16 +434,16 @@ void reset(Nodo *n){
     return 0;
 }*/
 
-// visita in ampiezza da start
+// visita in ampiezza da start con coda
 Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     start->color=1;
     Nodo *n, *succ;
     Coda q;
     int autonomia;
 
-    init(&q);
+    coda_init(&q);
     enqueue(&q, start);
-    while(!is_empty(&q)){
+    while(!coda_is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==end){
             //clean(&q);
@@ -421,16 +469,16 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     return NULL;
 }
 
-// visita in ampiezza da end
-Nodo* pianifica_percorso_indietro(Nodo* end, int start){
+// visita in ampiezza da end con coda
+/*Nodo* pianifica_percorso_indietro(Nodo* end, int start){
     end->color=1;
     Nodo *n, *succ;
     Coda q;
     int autonomia;
 
-    init(&q);
+    coda_init(&q);
     enqueue(&q, end);
-    while(!is_empty(&q)){
+    while(!coda_is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==start){
             //clean(&q);
@@ -452,6 +500,47 @@ Nodo* pianifica_percorso_indietro(Nodo* end, int start){
             succ = bst_successor(succ);
         }
         n->color=2;
+    }
+    return NULL;
+}*/
+
+// visita in ampiezza da start con pila
+Nodo* pianifica_percorso_indietro(Nodo* start, int end){
+    start->color=1;
+    Nodo *n, *prec;
+    Pila p, p2;
+    int autonomia;
+
+    pila_init(&p);
+    pila_init(&p2);
+
+    push(&p, start);
+    while(!pila_is_empty(&p)){
+        n = pop(&p);
+        if(n->stazione.distanza==end){
+            //clean(&q);
+            return n;
+        }
+        if(p2.top!=NULL)
+            prec = bst_predecessor(p2.top->val);
+        else
+            prec = bst_predecessor(n);
+        autonomia = heap_getmax(n->stazione.parco_auto);
+        if(autonomia<0)
+            return NULL;
+        while(prec!=NULL && n->stazione.distanza-autonomia <= prec->stazione.distanza){
+            if(prec->color==0){
+                prec->path_predecessor = n;
+                prec->color=1;
+                push(&p2, prec);
+            }
+            prec = bst_predecessor(prec);
+        }
+        n->color=2;
+        if(pila_is_empty(&p)){
+            p.top = p2.top;
+            pila_init(&p2);
+        }
     }
     return NULL;
 }
@@ -550,9 +639,15 @@ int pianifica_percorso(Tree autostrada){
         }
     } 
     else {
-        reset(autostrada.root);
+        /*reset(autostrada.root);
         if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), start)) != NULL){
             pre_backtrace(n);
+            printf("\n");
+            return 1;
+        }*/
+        reset(autostrada.root);
+        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, start), end)) != NULL){
+            post_backtrace(n);
             printf("\n");
             return 1;
         }
@@ -564,12 +659,12 @@ int pianifica_percorso(Tree autostrada){
 
 int scanf_veloce(char* s){
     int i=0;
-    char c=_getchar_nolock();
+    char c=getchar_unlocked();
     while( c!=' ' && c!=EOF){
         if(c!='\n' && c!='\r'){
             s[i]=c;
             i++;
-        }c=_getchar_nolock();
+        }c=getchar_unlocked();
     }
     s[i]='\0';
     return i;

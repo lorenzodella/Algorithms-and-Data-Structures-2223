@@ -302,21 +302,12 @@ void clean(Coda *p){
 
 //----------------------------AUTOSTRADA---------------------------------
 
-void scanf_veloce_numero(int* n){
-    *n=0;
-    int c=_getchar_nolock();
-    while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
-        *n=*n*10+c-48;
-        c=_getchar_nolock();
-    }
-}
-
 int aggiungi_stazione(Tree *autostrada){
     Stazione s;
-    scanf_veloce_numero(&s.distanza);
-    scanf_veloce_numero(&s.parco_auto.size);
+    if(scanf("%d", &s.distanza));
+    if(scanf("%d", &s.parco_auto.size));
     for(int i=0; i<s.parco_auto.size; i++){
-        scanf_veloce_numero(&s.parco_auto.vet[i]);
+        if(scanf("%d", &s.parco_auto.vet[i]));
         heap_check_priority(&s.parco_auto, i);
     }
     //print_stazione(s);
@@ -325,14 +316,14 @@ int aggiungi_stazione(Tree *autostrada){
 
 int demolisci_stazione(Tree *autostrada){
     int distanza;
-    scanf_veloce_numero(&distanza);
+    if(scanf("%d", &distanza));
     return bst_delete(autostrada, bst_search(autostrada->root, distanza));
 }
 
 int aggiungi_auto(Tree *autostrada){
     int distanza, autonomia;
-    scanf_veloce_numero(&distanza);
-    scanf_veloce_numero(&autonomia);
+    if(scanf("%d", &distanza));
+    if(scanf("%d", &autonomia));
     Nodo* n = bst_search(autostrada->root, distanza);
     if(n==NULL)
         return 0;
@@ -341,8 +332,8 @@ int aggiungi_auto(Tree *autostrada){
 
 int rottama_auto(Tree *autostrada){
     int distanza, autonomia;
-    scanf_veloce_numero(&distanza);
-    scanf_veloce_numero(&autonomia);
+    if(scanf("%d", &distanza));
+    if(scanf("%d", &autonomia));
     Nodo* n = bst_search(autostrada->root, distanza);
     if(n==NULL)
         return 0;
@@ -398,7 +389,7 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     while(!is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==end){
-            //clean(&q);
+            clean(&q);
             return n;
         }
         if(q.tail!=NULL)
@@ -433,7 +424,7 @@ Nodo* pianifica_percorso_indietro(Nodo* end, int start){
     while(!is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==start){
-            //clean(&q);
+            clean(&q);
             return n;
         }
         if(q.tail!=NULL)
@@ -531,8 +522,8 @@ void pre_backtrace(Nodo *n){
 int pianifica_percorso(Tree autostrada){
     Nodo *n;
     int start, end;
-    scanf_veloce_numero(&start);
-    scanf_veloce_numero(&end);
+    if(scanf("%d", &start));
+    if(scanf("%d", &end));
     if(start==end){
         printf("%d\n", start);
         return 1;
@@ -562,25 +553,12 @@ int pianifica_percorso(Tree autostrada){
 
 //----------------------------MAIN---------------------------------
 
-int scanf_veloce(char* s){
-    int i=0;
-    char c=_getchar_nolock();
-    while( c!=' ' && c!=EOF){
-        if(c!='\n' && c!='\r'){
-            s[i]=c;
-            i++;
-        }c=_getchar_nolock();
-    }
-    s[i]='\0';
-    return i;
-}
-
 int main(){
     Tree autostrada;
     autostrada.root = NULL;
 
     char *command = malloc(sizeof(char)*20);
-    while(scanf_veloce(command)>0){
+    while(scanf("%s", command)>0){
         if(strcmp(command, "aggiungi-stazione")==0){
             if(aggiungi_stazione(&autostrada))
                 printf("aggiunta\n");

@@ -304,10 +304,10 @@ void clean(Coda *p){
 
 void scanf_veloce_numero(int* n){
     *n=0;
-    int c=_getchar_nolock();
+    int c=getchar_unlocked();
     while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
         *n=*n*10+c-48;
-        c=_getchar_nolock();
+        c=getchar_unlocked();
     }
 }
 
@@ -398,7 +398,7 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
     while(!is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==end){
-            //clean(&q);
+            clean(&q);
             return n;
         }
         if(q.tail!=NULL)
@@ -433,7 +433,7 @@ Nodo* pianifica_percorso_indietro(Nodo* end, int start){
     while(!is_empty(&q)){
         n = dequeue(&q);
         if(n->stazione.distanza==start){
-            //clean(&q);
+            clean(&q);
             return n;
         }
         if(q.tail!=NULL)
@@ -564,12 +564,12 @@ int pianifica_percorso(Tree autostrada){
 
 int scanf_veloce(char* s){
     int i=0;
-    char c=_getchar_nolock();
+    char c=getchar_unlocked();
     while( c!=' ' && c!=EOF){
         if(c!='\n' && c!='\r'){
             s[i]=c;
             i++;
-        }c=_getchar_nolock();
+        }c=getchar_unlocked();
     }
     s[i]='\0';
     return i;

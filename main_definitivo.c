@@ -4,6 +4,31 @@
 
 #define MAX_AUTO 512
 
+//-----------------------------SCANF--------------------------------
+
+void scanf_veloce_numero(int* n){
+    *n=0;
+    int c=getchar_unlocked();
+    while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
+        *n=*n*10+c-48;
+        c=getchar_unlocked();
+    }
+}
+
+int scanf_veloce(char* s){
+    int i=0;
+    char c=getchar_unlocked();
+    while( c!=' ' && c!=EOF){
+        if(c!='\n' && c!='\r'){
+            s[i]=c;
+            i++;
+        }
+        c=getchar_unlocked();
+    }
+    s[i]='\0';
+    return i;
+}
+
 //-----------------------------MAXHEAP--------------------------------
 
 typedef struct heap {
@@ -108,15 +133,12 @@ typedef struct nodo {
     struct nodo *left;
     struct nodo *right;
     struct nodo *p;
-    int color;
     struct nodo *path_predecessor;
 } Nodo;
 
-typedef struct autostrada {
+typedef struct tree {
     Nodo *root;
 } Tree;
-
-//#include "bstprinter.h"
 
 Nodo* bst_newnode(Stazione s){
     Nodo *new = malloc(sizeof(Nodo));
@@ -134,31 +156,6 @@ Nodo* bst_search(Nodo *n, int distanza){
         return bst_search(n->left, distanza);
     else
         return bst_search(n->right, distanza);
-}
-
-int bst_insert(Tree *autostrada, Stazione s){
-    Nodo *new = bst_newnode(s);
-    Nodo *cur = autostrada->root;
-    Nodo *par = NULL;
-
-    while(cur!=NULL){
-        par = cur;
-        if(new->stazione.distanza == cur->stazione.distanza)
-            return 0;
-        if(new->stazione.distanza < cur->stazione.distanza)
-            cur = cur->left;
-        else
-            cur = cur->right;
-    }
-    new->p = par;
-    if(par == NULL)
-        autostrada->root = new;
-    else if(new->stazione.distanza < par->stazione.distanza)
-        par->left = new;
-    else if(new->stazione.distanza > par->stazione.distanza)
-        par->right = new;
-
-    return 1;
 }
 
 Nodo* bst_minimum(Nodo* n){
@@ -197,17 +194,32 @@ Nodo* bst_predecessor(Nodo* n){
     return par;
 }
 
-Nodo* bst_find_furthest(Nodo* n){
-    int autonomia = heap_getmax(n->stazione.parco_auto);
-    Nodo *tmp = n, *prec = NULL;
-    while(tmp!=NULL && tmp->stazione.distanza >= n->stazione.distanza-autonomia){
-        prec = tmp;
-        tmp = bst_predecessor(tmp);
+int bst_insert(Tree *tree, Stazione s){
+    Nodo *new = bst_newnode(s);
+    Nodo *cur = tree->root;
+    Nodo *par = NULL;
+
+    while(cur!=NULL){
+        par = cur;
+        if(new->stazione.distanza == cur->stazione.distanza)
+            return 0;
+        if(new->stazione.distanza < cur->stazione.distanza)
+            cur = cur->left;
+        else
+            cur = cur->right;
     }
-    return prec;
+    new->p = par;
+    if(par == NULL)
+        tree->root = new;
+    else if(new->stazione.distanza < par->stazione.distanza)
+        par->left = new;
+    else if(new->stazione.distanza > par->stazione.distanza)
+        par->right = new;
+
+    return 1;
 }
 
-int bst_delete(Tree *autostrada, Nodo* n){
+int bst_delete(Tree *tree, Nodo* n){
     if(n==NULL)
         return 0;
 
@@ -223,7 +235,7 @@ int bst_delete(Tree *autostrada, Nodo* n){
     if(repl!=NULL)
         repl->p = todel->p;
     if(repl!=NULL && repl->p==NULL)
-        autostrada->root = repl;
+        tree->root = repl;
     else if(todel->p!=NULL){
         if(todel==todel->p->left)
             todel->p->left = repl;
@@ -231,7 +243,7 @@ int bst_delete(Tree *autostrada, Nodo* n){
             todel->p->right = repl;
     }
     else{
-        autostrada->root=NULL;
+        tree->root=NULL;
     }
     if(todel!=n)
         n->stazione = todel->stazione;
@@ -250,66 +262,87 @@ void bst_print_inorder(Nodo* n){
 
 //----------------------------CODA---------------------------------
 
-typedef struct elem {
+typedef struct c_elem {
     Nodo* val;
-    struct elem *next;
-    struct elem *prev;
-} Elem;
+    struct c_elem *next;
+    struct c_elem *prev;
+} CodaElem;
 
 typedef struct coda {
-    Elem *tail;
-    Elem *head;
+    CodaElem *tail;
+    CodaElem *head;
 } Coda;
 
-void init(Coda *p){
-    p->head = NULL;
-    p->tail = NULL;
+void coda_init(Coda *q){
+    q->head = NULL;
+    q->tail = NULL;
 }
 
-int is_empty(Coda *p){
-    return (p->tail==NULL && p->head==NULL);
+int coda_is_empty(Coda *q){
+    return (q->tail==NULL && q->head==NULL);
 }
 
-void enqueue(Coda *p, Nodo *n){
-    Elem *e = malloc(sizeof(Elem));
+void enqueue(Coda *q, Nodo *n){
+    CodaElem *e = malloc(sizeof(CodaElem));
     e->val = n;
-    e->next = p->tail;
+    e->next = q->tail;
     e->prev = NULL;
-    p->tail = e;
+    q->tail = e;
     if(e->next==NULL)
-        p->head = p->tail;
+        q->head = q->tail;
     else
         e->next->prev = e;
 }
 
-Nodo* dequeue(Coda *p){
-    Elem *e = p->head;
-    p->head = p->head->prev;
-    if(p->head!=NULL)
-        p->head->next = NULL;
+Nodo* dequeue(Coda *q){
+    CodaElem *e = q->head;
+    q->head = q->head->prev;
+    if(q->head!=NULL)
+        q->head->next = NULL;
     else
-        p->tail = NULL;
+        q->tail = NULL;
     Nodo *n = e->val;
     free(e);
     return n;
 }
 
-void clean(Coda *p){
-    while(!is_empty(p)){
-        dequeue(p);
-    }
+//----------------------------PILA---------------------------------
+
+typedef struct p_elem {
+    Nodo *val;
+    struct p_elem *next;
+} PilaElem;
+
+typedef struct pila {
+    PilaElem *top;
+} Pila;
+
+void pila_init(Pila *p){
+    p->top = NULL;
+}
+
+int pila_is_empty(Pila *p){
+    return p->top == NULL;
+}
+
+void push(Pila *p, Nodo *n){
+    PilaElem *e = malloc(sizeof(PilaElem));
+    e->val = n;
+    e->next = p->top;
+    p->top = e;
+}
+
+Nodo* pop(Pila *p){
+    if(pila_is_empty(p))
+        return NULL;
+    PilaElem *e = p->top;
+    p->top = p->top->next;
+    Nodo *n = e->val;
+    free(e);
+    return n;
 }
 
 //----------------------------AUTOSTRADA---------------------------------
-
-void scanf_veloce_numero(int* n){
-    *n=0;
-    int c=_getchar_nolock();
-    while( c!=' ' && c!=EOF && c!='\n' && c!='\r'){
-        *n=*n*10+c-48;
-        c=_getchar_nolock();
-    }
-}
 
 int aggiungi_stazione(Tree *autostrada){
     Stazione s;
@@ -319,7 +352,6 @@ int aggiungi_stazione(Tree *autostrada){
         scanf_veloce_numero(&s.parco_auto.vet[i]);
         heap_check_priority(&s.parco_auto, i);
     }
-    //print_stazione(s);
     return bst_insert(autostrada, s);
 }
 
@@ -353,54 +385,24 @@ int rottama_auto(Tree *autostrada){
 
 void reset(Nodo *n){
     if(n!=NULL){
-        n->color = 0;
         n->path_predecessor = NULL;
         reset(n->left);
         reset(n->right);
     }
 }
 
-// idea iniziale
-/*int pianifica_percorso_avanti(Nodo* start, int end){
-    Nodo* n = start;
-    int distanza = n->stazione.distanza;
-    int autonomia = heap_getmax(n->stazione.parco_auto);
-
-    if(start->stazione.distanza == end){
-        return 1;
-    }
-
-    while(distanza+autonomia < end){
-        if(autonomia<0)
-            return 0;
-        n = bst_successor(n);
-        if(n==NULL || n->stazione.distanza == end)
-            return 0;
-        distanza = n->stazione.distanza;
-        autonomia = heap_getmax(n->stazione.parco_auto);
-    }
-    if(pianifica_percorso_avanti(start, n->stazione.distanza)){
-        printf("%d ", n->stazione.distanza);
-        return 1;
-    }
-    return 0;
-}*/
-
-// visita in ampiezza da start
 Nodo* pianifica_percorso_avanti(Nodo* start, int end){
-    start->color=1;
     Nodo *n, *succ;
     Coda q;
     int autonomia;
 
-    init(&q);
+    coda_init(&q);
     enqueue(&q, start);
-    while(!is_empty(&q)){
+    while(!coda_is_empty(&q)){
         n = dequeue(&q);
-        if(n->stazione.distanza==end){
-            //clean(&q);
+        if(n->stazione.distanza==end)
             return n;
-        }
+        
         if(q.tail!=NULL)
             succ = bst_successor(q.tail->val);
         else
@@ -409,122 +411,55 @@ Nodo* pianifica_percorso_avanti(Nodo* start, int end){
         if(autonomia<0)
             return NULL;
         while(succ!=NULL && succ->stazione.distanza <= n->stazione.distanza+autonomia){
-            if(succ->color==0){
-                succ->path_predecessor = n;
-                succ->color=1;
-                enqueue(&q, succ);
-            }
+            succ->path_predecessor = n;
+            enqueue(&q, succ);
             succ = bst_successor(succ);
         }
-        n->color=2;
     }
     return NULL;
 }
 
-// visita in ampiezza da end
-Nodo* pianifica_percorso_indietro(Nodo* end, int start){
-    end->color=1;
-    Nodo *n, *succ;
-    Coda q;
+Nodo* pianifica_percorso_indietro(Nodo* start, int end){
+    Nodo *n, *prec;
+    Pila p, tmp;
     int autonomia;
 
-    init(&q);
-    enqueue(&q, end);
-    while(!is_empty(&q)){
-        n = dequeue(&q);
-        if(n->stazione.distanza==start){
-            //clean(&q);
+    pila_init(&p);
+    pila_init(&tmp);
+
+    push(&p, start);
+    while(!pila_is_empty(&p)){
+        n = pop(&p);
+        if(n->stazione.distanza==end)
             return n;
-        }
-        if(q.tail!=NULL)
-            succ = bst_successor(q.tail->val);
+        
+        if(tmp.top!=NULL)
+            prec = bst_predecessor(tmp.top->val);
         else
-            succ = bst_successor(n);
-        while(succ!=NULL && succ->stazione.distanza <= start){
-            autonomia = heap_getmax(succ->stazione.parco_auto);
-            if(autonomia<0)
-                return NULL;
-            if(succ->color==0 && n->stazione.distanza+autonomia >= succ->stazione.distanza){
-                succ->path_predecessor = n;
-                succ->color=1;
-                enqueue(&q, succ);
-            }
-            succ = bst_successor(succ);
-        }
-        n->color=2;
-    }
-    return NULL;
-}
-
-// visita in ampiezza da start con passo piu lontano e torno indietro
-/*Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
-    start->color=1;
-    Nodo *n, *succ;
-    Coda q;
-
-    init(&q);
-    enqueue(&q, start);
-    while(!is_empty(&q)){
-        n = dequeue(&q);
-        if(n->stazione.distanza==end->stazione.distanza)
-            return n;
-        succ = bst_find_furthest(n);
-        while(succ!=NULL && succ!=n){
-            if(succ->color==0){
-                succ->path_predecessor = n;
-                succ->color=1;
-                enqueue(&q, succ);
-            }
-            succ = bst_successor(succ);
-        }
-        n->color=2;
-    }
-    return NULL;
-}*/
-
-// visita in ampiezza da start
-/*Nodo* pianifica_percorso_indietro(Nodo* end, Nodo* start){
-    start->color=1;
-    Nodo *n, *succ;
-    Coda q;
-    int autonomia;
-
-    init(&q);
-    enqueue(&q, start);
-    while(!is_empty(&q)){
-        n = dequeue(&q);
-        if(n->stazione.distanza==end->stazione.distanza)
-            return n;
-        succ = bst_predecessor(n);
+            prec = bst_predecessor(n);
         autonomia = heap_getmax(n->stazione.parco_auto);
-        while(succ!=NULL && succ->stazione.distanza >= n->stazione.distanza-autonomia){
-            if(succ->color==0){
-                succ->path_predecessor = n;
-                succ->color=1;
-                enqueue(&q, succ);
-            }
-            succ = bst_predecessor(succ);
+        if(autonomia<0)
+            return NULL;
+        while(prec!=NULL && n->stazione.distanza-autonomia <= prec->stazione.distanza){
+            prec->path_predecessor = n;
+            push(&tmp, prec);
+            prec = bst_predecessor(prec);
         }
-        n->color=2;
+
+        if(pila_is_empty(&p)){
+            p.top = tmp.top;
+            pila_init(&tmp);
+        }
     }
     return NULL;
-}*/
-
-void post_backtrace(Nodo *n){
-    if(n!=NULL){
-        post_backtrace(n->path_predecessor);
-        if(n->path_predecessor!=NULL)
-            printf(" ");
-        printf("%d", n->stazione.distanza);
-    }
 }
 
-void pre_backtrace(Nodo *n){
+void backtrace(Nodo *n){
     if(n!=NULL){
-        printf("%d", n->stazione.distanza);
+        backtrace(n->path_predecessor);
         if(n->path_predecessor!=NULL)
             printf(" ");
-        pre_backtrace(n->path_predecessor);
+        printf("%d", n->stazione.distanza);
     }
 }
 
@@ -538,21 +473,17 @@ int pianifica_percorso(Tree autostrada){
         return 1;
     }
     else if(start<end){
-        /*if( pianifica_percorso_avanti(bst_search(autostrada.root, start), end)){
-            printf("%d\n", end);
-            return 1;
-        }*/
         reset(autostrada.root);
         if( (n=pianifica_percorso_avanti(bst_search(autostrada.root, start), end)) != NULL){
-            post_backtrace(n);
+            backtrace(n);
             printf("\n");
             return 1;
         }
     } 
     else {
         reset(autostrada.root);
-        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, end), start)) != NULL){
-            pre_backtrace(n);
+        if( (n=pianifica_percorso_indietro(bst_search(autostrada.root, start), end)) != NULL){
+            backtrace(n);
             printf("\n");
             return 1;
         }
@@ -561,19 +492,6 @@ int pianifica_percorso(Tree autostrada){
 }
 
 //----------------------------MAIN---------------------------------
-
-int scanf_veloce(char* s){
-    int i=0;
-    char c=_getchar_nolock();
-    while( c!=' ' && c!=EOF){
-        if(c!='\n' && c!='\r'){
-            s[i]=c;
-            i++;
-        }c=_getchar_nolock();
-    }
-    s[i]='\0';
-    return i;
-}
 
 int main(){
     Tree autostrada;
@@ -611,40 +529,4 @@ int main(){
         }
     }
 
-    /*Coda p;
-    init(&p);
-    Nodo *n;
-    n=malloc(sizeof(Nodo));
-    n->stazione.distanza = 1;
-    enqueue(&p, n);
-    n=malloc(sizeof(Nodo));
-    n->stazione.distanza = 2;
-    enqueue(&p, n);
-    n=malloc(sizeof(Nodo));
-    n->stazione.distanza = 3;
-    enqueue(&p, n);
-
-    printf("%d ", dequeue(&p)->stazione.distanza);
-    printf("%d ", dequeue(&p)->stazione.distanza);
-    printf("%d\n", dequeue(&p)->stazione.distanza);
-    printf("%d\n", is_empty(&p));
-
-    n=malloc(sizeof(Nodo));
-    n->stazione.distanza = 4;
-    enqueue(&p, n);
-    
-    printf("%d\n", is_empty(&p));
-
-    printf("%d\n", dequeue(&p)->stazione.distanza);
-    printf("%d\n", is_empty(&p));*/
-
-    //printf("\n");
-    //bst_print_inorder(autostrada.root);
-    //TreePrinter(autostrada);
-    //printf("\n%d\n", bst_minimum(autostrada.root)->stazione.distanza);
-    //printf("\n%d\n", bst_successor(bst_minimum(autostrada.root))->stazione.distanza);
-    //bst_print_inorder(autostrada.root);
-    //TreePrinter(autostrada);
 } 
-
-//"args": ["<", "../tests/archivio_test_aperti/open_3.txt", ">", "../tests/archivio_test_aperti/esiti/open_3.output.txt"],
